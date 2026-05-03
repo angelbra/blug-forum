@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: blug-forum
+  datasource:
+    url: jdbc:postgresql://localhost:5432/forum
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

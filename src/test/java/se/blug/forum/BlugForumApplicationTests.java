@@ -1,4 +1,4 @@
-package se.blug.blug_forum;
+package se.blug.forum;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
