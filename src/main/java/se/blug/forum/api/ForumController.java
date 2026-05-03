@@ -32,5 +32,10 @@ public class ForumController {
     public Iterable<ForumData> list() {
         return forumRepository.findAll();
     }
+    @GetMapping("/delete")
+    public void delete ()
+    {
+        forumRepository.deleteAll();
+    }
 
 }
