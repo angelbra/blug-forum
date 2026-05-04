@@ -20,6 +20,15 @@
                 <textarea name="content" placeholder="What's on your mind?" required></textarea>
                 <button type="submit" class="btn-primary">Post</button>
             </form>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--primary-pink);">
+                <p style="margin-bottom: 10px; color: var(--dark-pink); font-weight: 500;">Quick Actions:</p>
+                <form th:action="@{/posts/welcome-linus}" method="post">
+                    <button type="submit" class="btn-primary" style="background-color: #ff1493; width: 100%;">
+                        ✨ Skapa Välkomstmeddelande till Linus
+                    </button>
+                </form>
+            </div>
         </section>
 
         <section class="posts-section">

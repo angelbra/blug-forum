@@ -39,4 +39,14 @@ public class WebController {
         redirectAttributes.addFlashAttribute("success", "Post created successfully!");
         return "redirect:/dashboard";
     }
+
+    @PostMapping("/posts/welcome-linus")
+    public String createWelcomePostForLinus(RedirectAttributes redirectAttributes) {
+        ForumData post = new ForumData();
+        post.setTitle("Välkomstmeddelande");
+        post.setContent("Hej Linus, välkommen till min forum MVH Angelica");
+        forumRepository.save(post);
+        redirectAttributes.addFlashAttribute("success", "Välkomstmeddelande skapat!");
+        return "redirect:/dashboard";
+    }
 }
