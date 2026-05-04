@@ -1,43 +1,42 @@
 package se.blug.forum.api;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import se.blug.forum.model.ForumData;
 import se.blug.forum.repo.ForumRepository;
+import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
+@RequestMapping("/")
 public class WebController {
+
     private final ForumRepository forumRepository;
 
     @GetMapping("/")
-    public String viewHomePage()
-    {
-        return "index";
+    public String viewHomePage() {
+        return "redirect:/dashboard";
     }
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        model.addAttribute("posts", forumRepository.findAll());
+        model.addAttribute("posts", forumRepository.findAllByOrderByCreatedAtDesc());
+        model.addAttribute("newPost", new ForumData());
         return "dashboard";
     }
 
     @PostMapping("/posts")
-    public String createBlogPost(
-            @RequestParam String title,
-            @RequestParam String content
-    ) {
-        System.out.println("New blog post title: " + title);
-        System.out.println("New blog post content: " + content);
-        ForumData entity = new ForumData();
-        entity.setTitle(title);
-        entity.setContent(content);
-        forumRepository.save(entity);
+    public String createBlogPost(@RequestParam String title, @RequestParam String content, RedirectAttributes redirectAttributes) {
+        ForumData post = new ForumData();
+        post.setTitle(title);
+        post.setContent(content);
+        forumRepository.save(post);
+        redirectAttributes.addFlashAttribute("success", "Post created successfully!");
         return "redirect:/dashboard";
     }
-
 }
