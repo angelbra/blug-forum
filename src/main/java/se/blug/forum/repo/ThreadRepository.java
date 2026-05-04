@@ -2,11 +2,11 @@ package se.blug.forum.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import se.blug.forum.model.Thread;
+import se.blug.forum.model.ForumThread;
 import java.util.List;
 
 @Repository
-public interface ThreadRepository extends JpaRepository<Thread, Long> {
-    List<Thread> findByForumId(Long forumId);
-    List<Thread> findByOwnerId(Long ownerId);
+public interface ThreadRepository extends JpaRepository<ForumThread, Long> {
+    List<ForumThread> findByForumId(Long forumId);
+    List<ForumThread> findByOwnerId(Long ownerId);
 }
