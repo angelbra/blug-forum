@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Blog Overview</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .post { background: #ffffff; border: 1px solid #ddd; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .post h2 { margin-top: 0; color: #333; }
+        .post p { color: #555; line-height: 1.6; }
+        nav { background: #333; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; }
+        nav a { color: #fff; text-decoration: none; margin-right: 20px; font-weight: bold; }
+        nav a:hover { text-decoration: underline; }
+        nav form { display: inline; }
+        nav button { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        nav button:hover { background: #c82333; }
+        .empty-state { text-align: center; color: #777; margin-top: 50px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="/">Home</a>
+            <a href="/dashboard">Dashboard</a>
+            <form th:action="@{/api/auth/logout}" method="post" style="display:inline;">
+                <button type="submit">Logout</button>
+            </form>
+        </nav>
+
+        <h1>Blog Dashboard</h1>
+
+        <div th:if="${posts.isEmpty()}" class="empty-state">
+            <p>No blog posts found. Be the first to share something!</p>
+        </div>
+
+        <div th:each="post : ${posts}" class="post">
+            <h2 th:text="${post.title}">Post Title</h2>
+            <p th:text="${post.content}">Post Content goes here...</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/auth/login")
-                        .defaultSuccessUrl("/api/hello", false)
+                        .defaultSuccessUrl("/dashboard", false)
                         .failureUrl("/api/auth/login?error")
                         .permitAll()
                 )
