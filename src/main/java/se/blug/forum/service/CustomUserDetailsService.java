@@ -1,37 +1,35 @@
 package se.blug.forum.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import se.blug.forum.model.UserData;
-import se.blug.forum.repo.UserDataRepository;
+import se.blug.forum.model.User;
+import se.blug.forum.repo.UserRepository;
 
-import java.util.Optional;
+import java.util.Collections;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserDataRepository userDataRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
-        Optional<UserData> userModel = userDataRepository.findByUsername(username);
-
-        if (userModel.isEmpty()) {
-            log.warn("Username {} not found", username);
-            throw new UsernameNotFoundException("User not found: " + username);
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        
+        if (user.isBlocked()) {
+            throw new UsernameNotFoundException("User is blocked");
         }
-        return User.builder()
-                .username(userModel.get().getUsername())
-                .password(userModel.get().getPassword())
-                .roles(userModel.get().getRole())
-                .build();
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(),
+                user.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+        );
     }
 }
