@@ -31,6 +31,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/forums/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/threads/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers("/api/forums/**").authenticated()
                         .requestMatchers("/api/threads/**").authenticated()
                         .requestMatchers("/api/posts/**").authenticated()
