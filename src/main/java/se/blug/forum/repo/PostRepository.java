@@ -7,5 +7,5 @@ import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
-    List<Post> findByThreadId(Long threadId);
+    List<Post> findByForumThreadId(Long threadId);
 }

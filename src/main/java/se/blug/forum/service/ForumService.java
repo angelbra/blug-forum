@@ -26,15 +26,15 @@ public class ForumService {
 
     // --- Thread Operations ---
     @Transactional
-    public Thread createThread(Thread thread, User owner, Forum forum) {
+    public ForumThread createThread(ForumThread thread, User owner, Forum forum) {
         thread.setForum(forum);
         thread.setOwner(owner);
         return threadRepository.save(thread);
     }
 
     @Transactional
-    public Thread updateThreadVisibility(Long threadId, boolean isPublic, User owner) {
-        Thread thread = threadRepository.findById(threadId)
+    public ForumThread updateThreadVisibility(Long threadId, boolean isPublic, User owner) {
+        ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new NoSuchElementException("Thread not found"));
         if (!thread.getOwner().getId().equals(owner.getId())) {
             throw new SecurityException("Only the thread owner can change visibility");
@@ -44,8 +44,8 @@ public class ForumService {
     }
 
     @Transactional
-    public Thread transferOwnership(Long threadId, User newOwner, User currentOwner) {
-        Thread thread = threadRepository.findById(threadId)
+    public ForumThread transferOwnership(Long threadId, User newOwner, User currentOwner) {
+        ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new NoSuchElementException("Thread not found"));
         if (!thread.getOwner().getId().equals(currentOwner.getId())) {
             throw new SecurityException("Only the thread owner can transfer ownership");
@@ -55,8 +55,8 @@ public class ForumService {
     }
 
     @Transactional
-    public Thread addModerator(Long threadId, User moderator, User owner) {
-        Thread thread = threadRepository.findById(threadId)
+    public ForumThread addModerator(Long threadId, User moderator, User owner) {
+        ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new NoSuchElementException("Thread not found"));
         if (!thread.getOwner().getId().equals(owner.getId())) {
             throw new SecurityException("Only the thread owner can add moderators");
@@ -66,8 +66,8 @@ public class ForumService {
     }
 
     @Transactional
-    public Thread removeModerator(Long threadId, User moderator, User owner) {
-        Thread thread = threadRepository.findById(threadId)
+    public ForumThread removeModerator(Long threadId, User moderator, User owner) {
+        ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new NoSuchElementException("Thread not found"));
         if (!thread.getOwner().getId().equals(owner.getId())) {
             throw new SecurityException("Only the thread owner can remove moderators");
@@ -78,8 +78,8 @@ public class ForumService {
 
     // --- Post Operations ---
     @Transactional
-    public Post createPost(Post post, User author, Thread thread) {
-        post.setThread(thread);
+    public Post createPost(Post post, User author, ForumThread thread) {
+        post.setForumThread(thread);
         post.setAuthor(author);
         return postRepository.save(post);
     }
@@ -100,7 +100,7 @@ public class ForumService {
     public void blockPostByModerator(Long postId, User moderator) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NoSuchElementException("Post not found"));
-        Thread thread = post.getThread();
+        ForumThread thread = post.getForumThread();
         if (!thread.getModerators().contains(moderator) && !thread.getOwner().getId().equals(moderator.getId())) {
             throw new SecurityException("Only moderators or the thread owner can block content");
         }

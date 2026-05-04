@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import se.blug.forum.model.ForumData;
+import se.blug.forum.model.Forum;
 import se.blug.forum.repo.ForumRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -26,14 +26,14 @@ public class WebController {
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         model.addAttribute("posts", forumRepository.findAllByOrderByCreatedAtDesc());
-        model.addAttribute("newPost", new ForumData());
+        model.addAttribute("newPost", new Forum());
         return "dashboard";
     }
 
     @PostMapping("/posts")
     public String createBlogPost(@RequestParam String title, @RequestParam String content, RedirectAttributes redirectAttributes) {
-        ForumData post = new ForumData();
-        post.setTitle(title);
+        Forum post = new Forum();
+        post.setDescription(title);
         post.setContent(content);
         forumRepository.save(post);
         redirectAttributes.addFlashAttribute("success", "Post created successfully!");
@@ -42,8 +42,8 @@ public class WebController {
 
     @PostMapping("/posts/welcome-linus")
     public String createWelcomePostForLinus(RedirectAttributes redirectAttributes) {
-        ForumData post = new ForumData();
-        post.setTitle("Välkomstmeddelande");
+        Forum post = new Forum();
+        post.setDescription("Välkomstmeddelande");
         post.setContent("Hej Linus, välkommen till min forum MVH Angelica");
         forumRepository.save(post);
         redirectAttributes.addFlashAttribute("success", "Välkomstmeddelande skapat!");

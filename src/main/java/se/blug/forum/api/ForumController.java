@@ -30,14 +30,14 @@ public class ForumController {
     }
 
     @GetMapping("/forums/{id}/threads")
-    public ResponseEntity<List<Thread>> getThreadsByForum(@PathVariable Long id) {
-        List<Thread> threads = threadRepository.findByForumId(id);
+    public ResponseEntity<List<ForumThread>> getThreadsByForum(@PathVariable Long id) {
+        List<ForumThread> threads = threadRepository.findByForumId(id);
         return ResponseEntity.ok(threads);
     }
 
     @GetMapping("/threads/{id}")
-    public ResponseEntity<Thread> getThread(@PathVariable Long id) {
-        Optional<Thread> thread = threadRepository.findById(id);
+    public ResponseEntity<ForumThread> getThread(@PathVariable Long id) {
+        Optional<ForumThread> thread = threadRepository.findById(id);
         return thread.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -63,18 +63,18 @@ public class ForumController {
     }
 
     @PostMapping("/forums/{forumId}/threads")
-    public ResponseEntity<Thread> createThread(@PathVariable Long forumId, @RequestBody Thread thread, Authentication authentication) {
+    public ResponseEntity<ForumThread> createThread(@PathVariable Long forumId, @RequestBody ForumThread thread, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         Forum forum = forumRepository.findById(forumId)
                 .orElseThrow(() -> new RuntimeException("Forum not found"));
-        Thread createdThread = forumService.createThread(thread, currentUser, forum);
+        ForumThread createdThread = forumService.createThread(thread, currentUser, forum);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdThread);
     }
 
     @PostMapping("/threads/{threadId}/posts")
     public ResponseEntity<Post> createPost(@PathVariable Long threadId, @RequestBody Post post, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        Thread thread = threadRepository.findById(threadId)
+        ForumThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new RuntimeException("Thread not found"));
         Post createdPost = forumService.createPost(post, currentUser, thread);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdPost);
@@ -82,31 +82,31 @@ public class ForumController {
 
     // --- Thread Ownership & Visibility ---
     @PutMapping("/threads/{threadId}/visibility")
-    public ResponseEntity<Thread> updateThreadVisibility(@PathVariable Long threadId, @RequestBody Thread visibilityUpdate, Authentication authentication) {
+    public ResponseEntity<ForumThread> updateThreadVisibility(@PathVariable Long threadId, @RequestBody ForumThread visibilityUpdate, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        Thread updatedThread = forumService.updateThreadVisibility(threadId, visibilityUpdate.isPublic(), currentUser);
+        ForumThread updatedThread = forumService.updateThreadVisibility(threadId, visibilityUpdate.isPublic(), currentUser);
         return ResponseEntity.ok(updatedThread);
     }
 
     @PostMapping("/threads/{threadId}/transfer-ownership")
-    public ResponseEntity<Thread> transferOwnership(@PathVariable Long threadId, @RequestBody User newOwner, Authentication authentication) {
+    public ResponseEntity<ForumThread> transferOwnership(@PathVariable Long threadId, @RequestBody User newOwner, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        Thread transferredThread = forumService.transferOwnership(threadId, newOwner, currentUser);
+        ForumThread transferredThread = forumService.transferOwnership(threadId, newOwner, currentUser);
         return ResponseEntity.ok(transferredThread);
     }
 
     // --- Moderator Management ---
     @PostMapping("/threads/{threadId}/moderators/add")
-    public ResponseEntity<Thread> addModerator(@PathVariable Long threadId, @RequestBody User moderator, Authentication authentication) {
+    public ResponseEntity<ForumThread> addModerator(@PathVariable Long threadId, @RequestBody User moderator, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        Thread updatedThread = forumService.addModerator(threadId, moderator, currentUser);
+        ForumThread updatedThread = forumService.addModerator(threadId, moderator, currentUser);
         return ResponseEntity.ok(updatedThread);
     }
 
     @PostMapping("/threads/{threadId}/moderators/remove")
-    public ResponseEntity<Thread> removeModerator(@PathVariable Long threadId, @RequestBody User moderator, Authentication authentication) {
+    public ResponseEntity<ForumThread> removeModerator(@PathVariable Long threadId, @RequestBody User moderator, Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
-        Thread updatedThread = forumService.removeModerator(threadId, moderator, currentUser);
+        ForumThread updatedThread = forumService.removeModerator(threadId, moderator, currentUser);
         return ResponseEntity.ok(updatedThread);
     }
 

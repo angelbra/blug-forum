@@ -33,10 +33,10 @@ public class User {
     private boolean blocked = false;
 
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
-    private Set<Thread> ownedThreads = new HashSet<>();
+    private Set<ForumThread> ownedForumThreads = new HashSet<>();
 
     @ManyToMany(mappedBy = "moderators", fetch = FetchType.LAZY)
-    private Set<Thread> moderatedThreads = new HashSet<>();
+    private Set<ForumThread> moderatedForumThreads = new HashSet<>();
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
