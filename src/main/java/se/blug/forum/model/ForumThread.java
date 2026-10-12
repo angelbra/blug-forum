@@ -35,6 +35,14 @@ public class ForumThread {
     @Column(nullable = false)
     private boolean isPublic = true;
 
+    @Column(nullable = false)
+    private boolean blocked = false;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "thread_participants", joinColumns = @JoinColumn(name = "thread_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<User> participants = new HashSet<>();
+
     @OneToMany(mappedBy = "forumThread", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts = new ArrayList<>();
 

@@ -34,6 +34,9 @@ public class Post {
     @Column(nullable = false)
     private boolean deleted = false;
 
+    @Column(nullable = false)
+    private boolean blocked = false;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
