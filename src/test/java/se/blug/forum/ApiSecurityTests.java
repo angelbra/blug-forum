@@ -19,7 +19,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:postgresql://localhost:5432/blug_forum_test")
 @ActiveProfiles("test")
 @Transactional
 class ApiSecurityTests {
@@ -62,6 +62,7 @@ class ApiSecurityTests {
             .andExpect(status().isOk()).andReturn().getRequest().getSession(false);
     }
     @Test void publicReadsAndProtectedWrites() throws Exception {
+        mvc.perform(get("/login")).andExpect(status().isOk());
         mvc.perform(get("/api/forums")).andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("password"))));
         mvc.perform(get("/api/threads/" + publicThread.getId())).andExpect(status().isOk());
         mvc.perform(post("/api/forums").with(csrf()).contentType("application/json").content("{\"name\":\"Forum\"}"))
@@ -69,6 +70,7 @@ class ApiSecurityTests {
     }
     @Test void realLoginAndAuthenticatedWrite() throws Exception {
         MockHttpSession session = login(owner);
+        mvc.perform(get("/dashboard").session(session)).andExpect(status().isOk());
         mvc.perform(post("/api/forums").session(session).with(csrf()).contentType("application/json")
             .content("{\"name\":\"Created through session\",\"createdBy\":{\"id\":" + other.getId() + "},\"blocked\":true}"))
             .andExpect(status().isCreated()).andExpect(jsonPath("blocked").value(false));
@@ -280,6 +282,23 @@ class ApiSecurityTests {
         admin.setRole(User.Role.USER); users.flush();
         mvc.perform(post("/api/admin/forums/" + forum.getId() + "/block").session(session).with(csrf())).andExpect(status().isForbidden());
         mvc.perform(delete("/api/admin/users/" + owner.getId()).session(session).with(csrf())).andExpect(status().isForbidden());
+    }
+    @Test void administratorProvisioningIsExplicitHashedAndRepeatable() throws Exception {
+        String name = "provisioned" + java.util.UUID.randomUUID();
+        org.springframework.mock.env.MockEnvironment environment = new org.springframework.mock.env.MockEnvironment()
+            .withProperty("blug.admin.username", name).withProperty("blug.admin.email", name + "@example.test")
+            .withProperty("blug.admin.password", "synthetic-provisioning-password");
+        se.blug.forum.config.UserCreateConfig provisioning = new se.blug.forum.config.UserCreateConfig(encoder, users, environment);
+        provisioning.run(); users.flush();
+        User provisioned = users.findByUsername(name).orElseThrow();
+        assertEquals(User.Role.ADMIN, provisioned.getRole()); assertTrue(encoder.matches("synthetic-provisioning-password", provisioned.getPassword()));
+        provisioning.run(); users.flush(); assertEquals(provisioned.getId(), users.findByUsername(name).orElseThrow().getId());
+        environment.setProperty("blug.admin.username", owner.getUsername()); provisioning.run();
+        assertEquals(User.Role.USER, owner.getRole());
+        assertTrue(encoder.matches("test-password", owner.getPassword()));
+        org.springframework.mock.env.MockEnvironment empty = new org.springframework.mock.env.MockEnvironment().withProperty("blug.admin.username", "must-not-be-created");
+        new se.blug.forum.config.UserCreateConfig(encoder, users, empty).run();
+        assertFalse(users.existsByUsername("must-not-be-created"));
     }
     @Test void blockedExistingSessionAndAdminAuthorization() throws Exception {
         MockHttpSession memberSession = login(other), adminSession = login(admin);
