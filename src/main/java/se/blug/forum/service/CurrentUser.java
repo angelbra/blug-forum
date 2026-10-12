@@ -17,6 +17,8 @@ public class CurrentUser {
                 || authentication.getPrincipal() instanceof String) return null;
         User user = users.findByUsername(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (!(authentication.getPrincipal() instanceof SessionUser principal) || !principal.getId().equals(user.getId()))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         if (user.isBlocked()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account blocked");
         return user;
     }

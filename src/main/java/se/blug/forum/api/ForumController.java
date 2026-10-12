@@ -101,6 +101,35 @@ public class ForumController {
     private void admin(Authentication auth) {
         if (!service.admin(currentUser.require(auth))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied");
     }
+    @PutMapping("/threads/{id}")
+    public ThreadView updateThread(@PathVariable Long id, @RequestBody ThreadInput request, Authentication auth) {
+        return ThreadView.of(service.updateOwnedThread(id, request.title(), request.content(), currentUser.require(auth)));
+    }
+    @DeleteMapping("/threads/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteOwnedThread(@PathVariable Long id, Authentication auth) { service.deleteOwnedThread(id, currentUser.require(auth)); }
+    @GetMapping("/users/me")
+    public Profile profile(Authentication auth) { return Profile.of(currentUser.require(auth)); }
+    @PutMapping("/users/me")
+    public Profile updateProfile(@RequestBody ProfileUpdate request, Authentication auth, jakarta.servlet.http.HttpServletRequest servletRequest) {
+        User user = currentUser.require(auth);
+        if (request.email() == null && request.password() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Profile fields required");
+        if (request.email() != null) {
+            String email = email(request.email());
+            if (!email.equals(user.getEmail()) && users.existsByEmail(email)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Email unavailable");
+            user.setEmail(email);
+        }
+        if (request.password() != null) {
+            user.setPassword(passwords.encode(password(request.password())));
+            servletRequest.getSession().invalidate();
+        }
+        return Profile.of(user);
+    }
+    @DeleteMapping("/users/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProfile(Authentication auth, jakarta.servlet.http.HttpServletRequest request) {
+        service.deleteUser(currentUser.require(auth).getId()); request.getSession().invalidate();
+    }
     @PostMapping("/admin/users/{id}/block")
     public Profile blockUser(@PathVariable Long id, Authentication auth) { admin(auth); return Profile.of(service.blockUser(id)); }
     @PostMapping("/admin/users/{id}/restore")
