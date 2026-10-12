@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:postgresql://localhost:5432/blug_forum_test")
 @ActiveProfiles("test")
 class BlugForumApplicationTests {
 
