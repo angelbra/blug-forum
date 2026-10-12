@@ -181,6 +181,58 @@ class ApiSecurityTests {
         account(owner.getUsername(), User.Role.USER);
         mvc.perform(get("/api/users/me").session(second)).andExpect(status().isUnauthorized());
     }
+    @Test void moderatorRightsAreThreadScopedAndRevocable() throws Exception {
+        MockHttpSession ownerSession = login(owner), moderatorSession = login(other);
+        String path = "/api/threads/" + privateThread.getId();
+        Post privatePost = makePost(privateThread, owner), publicPost = makePost(publicThread, owner);
+        mvc.perform(post(path + "/moderators/add").session(moderatorSession).with(csrf()).contentType("application/json").content("{\"id\":" + other.getId() + "}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(post(path + "/moderators/add").session(ownerSession).with(csrf()).contentType("application/json").content("{\"id\":" + other.getId() + "}"))
+            .andExpect(status().isOk());
+        mvc.perform(get(path).session(moderatorSession)).andExpect(status().isOk());
+        mvc.perform(post("/api/posts/" + publicPost.getId() + "/block").session(moderatorSession).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/posts/" + publicPost.getId()).session(moderatorSession).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/api/posts/" + privatePost.getId() + "/block").session(moderatorSession).with(csrf())).andExpect(status().isNoContent());
+        mvc.perform(get("/api/posts/" + privatePost.getId()).session(ownerSession)).andExpect(status().isNotFound());
+        assertEquals("Synthetic post", privatePost.getContent()); assertTrue(privatePost.isBlocked()); assertFalse(privatePost.isDeleted());
+        Post removable = makePost(privateThread, owner);
+        mvc.perform(put("/api/posts/" + removable.getId()).session(moderatorSession).with(csrf()).contentType("application/json").content("{\"content\":\"Edited by mod\"}"))
+            .andExpect(status().isForbidden());
+        mvc.perform(delete("/api/posts/" + removable.getId()).session(moderatorSession).with(csrf())).andExpect(status().isNoContent());
+        assertTrue(removable.isDeleted()); assertNull(removable.getContent());
+        mvc.perform(post(path + "/moderators/remove").session(ownerSession).with(csrf()).contentType("application/json").content("{\"id\":" + other.getId() + "}"))
+            .andExpect(status().isOk());
+        mvc.perform(get(path).session(moderatorSession)).andExpect(status().isNotFound());
+        mvc.perform(post("/api/posts/" + privatePost.getId() + "/block").session(moderatorSession).with(csrf())).andExpect(status().isNotFound());
+    }
+    @Test void participantManagementControlsPrivateAccessAndWrites() throws Exception {
+        User participant = account("participant" + java.util.UUID.randomUUID(), User.Role.USER);
+        MockHttpSession ownerSession = login(owner), moderatorSession = login(other), participantSession = login(participant);
+        String path = "/api/threads/" + privateThread.getId();
+        String participantBody = "{\"id\":" + participant.getId() + "}";
+        mvc.perform(post(path + "/posts").session(participantSession).with(csrf()).contentType("application/json").content("{\"content\":\"No access\"}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(post(path + "/moderators/add").session(ownerSession).with(csrf()).contentType("application/json").content("{\"id\":" + other.getId() + "}"))
+            .andExpect(status().isOk());
+        mvc.perform(post("/api/threads/" + publicThread.getId() + "/participants/add").session(moderatorSession).with(csrf()).contentType("application/json").content(participantBody))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(path + "/participants/add").session(moderatorSession).with(csrf()).contentType("application/json").content(participantBody))
+            .andExpect(status().isOk());
+        mvc.perform(get(path).session(participantSession)).andExpect(status().isOk());
+        mvc.perform(post(path + "/posts").session(participantSession).with(csrf()).contentType("application/json").content("{\"content\":\"Allowed\",\"author\":{\"id\":" + owner.getId() + "}}"))
+            .andExpect(status().isCreated()).andExpect(jsonPath("authorId").value(participant.getId()));
+        mvc.perform(post(path + "/moderators/add").session(participantSession).with(csrf()).contentType("application/json").content(participantBody))
+            .andExpect(status().isForbidden());
+        mvc.perform(post(path + "/participants/remove").session(moderatorSession).with(csrf()).contentType("application/json").content(participantBody))
+            .andExpect(status().isOk());
+        mvc.perform(get(path).session(participantSession)).andExpect(status().isNotFound());
+        mvc.perform(get(path + "/posts").session(participantSession)).andExpect(status().isNotFound());
+        mvc.perform(post(path + "/participants/add").session(moderatorSession).with(csrf()).contentType("application/json").content("{\"id\":999999999}"))
+            .andExpect(status().isNotFound());
+        participant.setBlocked(true); users.flush();
+        mvc.perform(post(path + "/participants/add").session(ownerSession).with(csrf()).contentType("application/json").content(participantBody))
+            .andExpect(status().isForbidden());
+    }
     @Test void blockedExistingSessionAndAdminAuthorization() throws Exception {
         MockHttpSession memberSession = login(other), adminSession = login(admin);
         mvc.perform(post("/api/admin/users/" + owner.getId() + "/block").session(memberSession).with(csrf())).andExpect(status().isForbidden());
