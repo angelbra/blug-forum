@@ -112,7 +112,38 @@ public class ForumService {
     }
     public User blockUser(Long id) { User user = user(id); user.setBlocked(true); return user; }
     public User restoreUser(Long id) { User user = user(id); user.setBlocked(false); return user; }
+    public ForumThread updateOwnedThread(Long id, String title, String content, User user) {
+        ForumThread thread = thread(id); write(thread, user); allow(owner(thread, user));
+        thread.setTitle(required(title, 200, "title")); thread.setContent(optional(content, 20000, "content"));
+        return thread;
+    }
+    public void deleteOwnedThread(Long id, User user) {
+        ForumThread thread = thread(id); write(thread, user); allow(owner(thread, user));
+        deleteThread(id);
+    }
+    public void deleteUser(Long id) {
+        User user = user(id);
+        for (ForumThread owned : threadRepository.findByOwnerId(id)) deleteThread(owned.getId());
+        postRepository.deleteAll(postRepository.findByAuthorId(id));
+        for (ForumThread thread : threadRepository.findAll()) {
+            thread.getModerators().removeIf(u -> u.getId().equals(id));
+            thread.getParticipants().removeIf(u -> u.getId().equals(id));
+        }
+        for (Forum forum : forumRepository.findAll()) {
+            if (forum.getCreatedBy() != null && forum.getCreatedBy().getId().equals(id)) forum.setCreatedBy(null);
+        }
+        // Flush relationship cleanup before the FK target is permanently removed.
+        threadRepository.flush(); forumRepository.flush(); postRepository.flush();
+        userRepository.delete(user); userRepository.flush();
+    }
     public void deleteForum(Long id) { forumRepository.delete(forum(id)); }
-    public void deleteThread(Long id) { threadRepository.delete(thread(id)); }
+    public void deleteThread(Long id) {
+        ForumThread thread = thread(id);
+        postRepository.deleteAll(postRepository.findByForumThreadId(id));
+        postRepository.flush();
+        thread.getPosts().clear();
+        thread.getForum().getForumThreads().removeIf(t -> t.getId().equals(id));
+        threadRepository.delete(thread); threadRepository.flush();
+    }
     public void deletePostAdmin(Long id) { postRepository.delete(post(id)); }
 }

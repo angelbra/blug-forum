@@ -118,6 +118,69 @@ class ApiSecurityTests {
         mvc.perform(post("/api/forums").session(session).contentType("application/json").content("{\"name\":\"Forum\"}")).andExpect(status().isForbidden());
         mvc.perform(post("/api/forums").session(session).with(csrf().useInvalidToken()).contentType("application/json").content("{\"name\":\"Forum\"}")).andExpect(status().isForbidden());
     }
+    @Test void ownedThreadEditingDeletionAndCurrentOwnership() throws Exception {
+        MockHttpSession ownerSession = login(owner), otherSession = login(other);
+        String path = "/api/threads/" + publicThread.getId();
+        mvc.perform(put(path).session(otherSession).with(csrf()).contentType("application/json").content("{\"title\":\"No\"}"))
+            .andExpect(status().isForbidden());
+        mvc.perform(delete(path).session(otherSession).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(put(path).session(ownerSession).with(csrf()).contentType("application/json").content("{\"title\":\"Edited\",\"content\":\"Updated body\",\"owner\":{\"id\":" + other.getId() + "}}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("ownerId").value(owner.getId()));
+        mvc.perform(post(path + "/transfer-ownership").session(ownerSession).with(csrf()).contentType("application/json").content("{\"id\":" + other.getId() + "}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("ownerId").value(other.getId()));
+        mvc.perform(put(path + "/visibility").session(ownerSession).with(csrf()).contentType("application/json").content("{\"isPublic\":false}"))
+            .andExpect(status().isForbidden());
+        mvc.perform(put(path + "/visibility").session(otherSession).with(csrf()).contentType("application/json").content("{\"isPublic\":false}"))
+            .andExpect(status().isOk());
+        mvc.perform(get(path)).andExpect(status().isNotFound());
+        mvc.perform(get(path).session(ownerSession)).andExpect(status().isOk());
+        makePost(publicThread, owner);
+        mvc.perform(delete(path).session(otherSession).with(csrf())).andExpect(status().isNoContent());
+        assertFalse(threads.existsById(publicThread.getId()));
+        assertTrue(posts.findByForumThreadId(publicThread.getId()).isEmpty());
+    }
+    @Test void ownershipTransferRequiresExistingUnblockedUser() throws Exception {
+        MockHttpSession session = login(owner);
+        String path = "/api/threads/" + privateThread.getId() + "/transfer-ownership";
+        mvc.perform(post(path).session(session).with(csrf()).contentType("application/json").content("{\"id\":999999999}"))
+            .andExpect(status().isNotFound());
+        other.setBlocked(true); users.flush();
+        mvc.perform(post(path).session(session).with(csrf()).contentType("application/json").content("{\"id\":" + other.getId() + "}"))
+            .andExpect(status().isForbidden());
+    }
+    @Test void profilePrivacyValidationAndRoleEscalation() throws Exception {
+        MockHttpSession session = login(owner);
+        mvc.perform(get("/api/users/me")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/users/me").session(session)).andExpect(status().isOk()).andExpect(jsonPath("email").value(owner.getEmail()))
+            .andExpect(jsonPath("password").doesNotExist());
+        mvc.perform(get("/api/users/" + other.getId()).session(session)).andExpect(status().isNotFound());
+        mvc.perform(put("/api/users/me").session(session).with(csrf()).contentType("application/json").content("{\"email\":\"bad\"}"))
+            .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/users/me").session(session).with(csrf()).contentType("application/json").content("{\"email\":\"" + other.getEmail() + "\"}"))
+            .andExpect(status().isConflict());
+        String email = "updated" + java.util.UUID.randomUUID() + "@example.test";
+        mvc.perform(put("/api/users/me").session(session).with(csrf()).contentType("application/json")
+            .content("{\"email\":\"" + email + "\",\"role\":\"ADMIN\",\"id\":" + other.getId() + ",\"blocked\":true}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("role").value("USER")).andExpect(jsonPath("id").value(owner.getId()))
+            .andExpect(jsonPath("blocked").value(false));
+        mvc.perform(put("/api/users/me").session(session).with(csrf()).contentType("application/json").content("{\"password\":\"changed-password\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("password").doesNotExist());
+        assertTrue(session.isInvalid());
+        mvc.perform(post("/api/auth/login").with(csrf()).param("username", owner.getUsername()).param("password", "changed-password"))
+            .andExpect(status().isOk());
+    }
+    @Test void deleteProfileSafelyCleansRelationshipsAndOldSessions() throws Exception {
+        ForumThread otherThread = makeThread("Another owner", false); otherThread.setOwner(other);
+        otherThread.getModerators().add(owner); otherThread.getParticipants().add(owner); threads.flush();
+        makePost(otherThread, owner); makePost(privateThread, other);
+        MockHttpSession first = login(owner), second = login(owner);
+        mvc.perform(delete("/api/users/me").session(first).with(csrf())).andExpect(status().isNoContent());
+        assertTrue(first.isInvalid()); assertFalse(users.existsById(owner.getId()));
+        assertFalse(threads.existsById(privateThread.getId())); assertTrue(posts.findByAuthorId(owner.getId()).isEmpty());
+        assertTrue(otherThread.getModerators().isEmpty()); assertTrue(otherThread.getParticipants().isEmpty()); assertNull(forum.getCreatedBy());
+        account(owner.getUsername(), User.Role.USER);
+        mvc.perform(get("/api/users/me").session(second)).andExpect(status().isUnauthorized());
+    }
     @Test void blockedExistingSessionAndAdminAuthorization() throws Exception {
         MockHttpSession memberSession = login(other), adminSession = login(admin);
         mvc.perform(post("/api/admin/users/" + owner.getId() + "/block").session(memberSession).with(csrf())).andExpect(status().isForbidden());
