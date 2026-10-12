@@ -92,6 +92,14 @@ public class ForumController {
     public PostView updatePost(@PathVariable Long postId, @RequestBody PostInput request, Authentication auth) {
         return PostView.of(service.updatePost(postId, request.content(), currentUser.require(auth)));
     }
+    @PostMapping("/threads/{threadId}/participants/add")
+    public ThreadView addParticipant(@PathVariable Long threadId, @RequestBody UserReference request, Authentication auth) {
+        return ThreadView.of(service.addParticipant(threadId, reference(request), currentUser.require(auth)));
+    }
+    @PostMapping("/threads/{threadId}/participants/remove")
+    public ThreadView removeParticipant(@PathVariable Long threadId, @RequestBody UserReference request, Authentication auth) {
+        return ThreadView.of(service.removeParticipant(threadId, reference(request), currentUser.require(auth)));
+    }
     @DeleteMapping("/posts/{postId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePost(@PathVariable Long postId, Authentication auth) { service.deletePost(postId, currentUser.require(auth)); }

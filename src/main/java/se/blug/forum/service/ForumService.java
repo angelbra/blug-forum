@@ -91,6 +91,16 @@ public class ForumService {
         User moderator = user(target.getId());
         thread.getModerators().removeIf(u -> u.getId().equals(moderator.getId())); return thread;
     }
+    public ForumThread addParticipant(Long id, User target, User current) {
+        ForumThread thread = thread(id); write(thread, current); allow(moderator(thread, current));
+        User participant = user(target.getId()); allow(!participant.isBlocked());
+        thread.getParticipants().add(participant); return thread;
+    }
+    public ForumThread removeParticipant(Long id, User target, User current) {
+        ForumThread thread = thread(id); write(thread, current); allow(moderator(thread, current));
+        User participant = user(target.getId());
+        thread.getParticipants().removeIf(u -> u.getId().equals(participant.getId())); return thread;
+    }
     public Post createPost(Post input, User author, ForumThread thread) {
         write(thread, author);
         Post post = new Post(); post.setContent(required(input.getContent(), 20000, "content"));
@@ -103,7 +113,7 @@ public class ForumService {
     }
     public Post deletePost(Long id, User author) {
         Post post = post(id); write(post.getForumThread(), author);
-        allow(post.getAuthor().getId().equals(author.getId()));
+        allow(post.getAuthor().getId().equals(author.getId()) || moderator(post.getForumThread(), author));
         post.setDeleted(true); post.setContent(null); return post;
     }
     public void blockPostByModerator(Long id, User current) {
