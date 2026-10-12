@@ -25,6 +25,9 @@ public class Forum {
     @Column
     private String content;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean blocked = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
