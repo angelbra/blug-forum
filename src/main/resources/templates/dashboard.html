@@ -36,7 +36,7 @@
             <div th:if="${success}" class="alert success" th:text="${success}"></div>
             <div class="posts-grid">
                 <div th:each="post : ${posts}" class="post-card">
-                    <h3 th:text="${post.title}">Post Title</h3>
+                    <h3 th:text="${post.name}">Post Title</h3>
                     <p th:text="${post.content}">Post content goes here...</p>
                     <small th:text="${#temporals.format(post.createdAt, 'dd-MM-yyyy HH:mm')}">Date</small>
                 </div>

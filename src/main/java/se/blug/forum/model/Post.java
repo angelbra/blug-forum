@@ -19,7 +19,7 @@ public class Post {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "thread_id", nullable = false)
-    private Thread thread;
+    private ForumThread forumThread;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
@@ -33,6 +33,9 @@ public class Post {
 
     @Column(nullable = false)
     private boolean deleted = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean blocked = false;
 
     @PrePersist
     protected void onCreate() {

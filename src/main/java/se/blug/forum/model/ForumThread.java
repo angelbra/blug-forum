@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "threads")
+@Table(name = "forum_thread")
 @Data
 @NoArgsConstructor
-public class Thread {
+public class ForumThread {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,7 +35,15 @@ public class Thread {
     @Column(nullable = false)
     private boolean isPublic = true;
 
-    @OneToMany(mappedBy = "thread", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean blocked = false;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "thread_participants", joinColumns = @JoinColumn(name = "thread_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<User> participants = new HashSet<>();
+
+    @OneToMany(mappedBy = "forumThread", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)

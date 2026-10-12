@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/blug_forum_test
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+blug:
+  admin:
+    password: ""
+logging:
+  level:
+    org.springframework.security: INFO

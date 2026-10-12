@@ -1,7 +1,8 @@
 package se.blug.forum.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -9,7 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class User {
     @Id
@@ -33,10 +35,10 @@ public class User {
     private boolean blocked = false;
 
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
-    private Set<Thread> ownedThreads = new HashSet<>();
+    private Set<ForumThread> ownedForumThreads = new HashSet<>();
 
     @ManyToMany(mappedBy = "moderators", fetch = FetchType.LAZY)
-    private Set<Thread> moderatedThreads = new HashSet<>();
+    private Set<ForumThread> moderatedForumThreads = new HashSet<>();
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

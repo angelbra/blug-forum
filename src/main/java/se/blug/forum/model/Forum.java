@@ -22,12 +22,18 @@ public class Forum {
     @Column
     private String description;
 
+    @Column
+    private String content;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean blocked = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
 
     @OneToMany(mappedBy = "forum", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Thread> threads = new ArrayList<>();
+    private List<ForumThread> forumThreads = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
