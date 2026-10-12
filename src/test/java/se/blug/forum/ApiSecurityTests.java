@@ -233,6 +233,54 @@ class ApiSecurityTests {
         mvc.perform(post(path + "/participants/add").session(ownerSession).with(csrf()).contentType("application/json").content(participantBody))
             .andExpect(status().isForbidden());
     }
+    @Test void adminBlocksAndRestoresContentWithoutIndirectLeaks() throws Exception {
+        MockHttpSession adminSession = login(admin), ownerSession = login(owner);
+        Post p = makePost(publicThread, owner);
+        mvc.perform(post("/api/admin/posts/" + p.getId() + "/block").session(adminSession).with(csrf()))
+            .andExpect(status().isOk()).andExpect(jsonPath("blocked").value(true));
+        mvc.perform(get("/api/posts/" + p.getId())).andExpect(status().isNotFound());
+        mvc.perform(get("/api/threads/" + publicThread.getId() + "/posts")).andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(post("/api/admin/posts/" + p.getId() + "/restore").session(adminSession).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/posts/" + p.getId())).andExpect(status().isOk()).andExpect(jsonPath("content").value("Synthetic post"));
+        mvc.perform(post("/api/admin/threads/" + publicThread.getId() + "/block").session(adminSession).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/posts/" + p.getId())).andExpect(status().isNotFound());
+        mvc.perform(get("/api/threads/" + publicThread.getId())).andExpect(status().isNotFound());
+        mvc.perform(get("/api/forums/" + forum.getId() + "/threads")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(post("/api/admin/threads/" + publicThread.getId() + "/restore").session(adminSession).with(csrf())).andExpect(status().isOk());
+        mvc.perform(post("/api/admin/forums/" + forum.getId() + "/block").session(adminSession).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/forums")).andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Synthetic forum"))));
+        mvc.perform(get("/api/forums/" + forum.getId() + "/threads")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/posts/" + p.getId())).andExpect(status().isNotFound());
+        mvc.perform(post("/api/threads/" + publicThread.getId() + "/posts").session(ownerSession).with(csrf()).contentType("application/json").content("{\"content\":\"Blocked parent\"}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(post("/api/admin/forums/" + forum.getId() + "/restore").session(adminSession).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/api/posts/" + p.getId())).andExpect(status().isOk());
+        mvc.perform(delete("/api/posts/" + p.getId()).session(ownerSession).with(csrf())).andExpect(status().isNoContent());
+        mvc.perform(post("/api/admin/posts/" + p.getId() + "/restore").session(adminSession).with(csrf())).andExpect(status().isConflict());
+    }
+    @Test void adminPermanentlyDeletesContentAndMissingObjectsReturn404() throws Exception {
+        MockHttpSession session = login(admin);
+        Post p = makePost(publicThread, owner);
+        mvc.perform(delete("/api/admin/posts/" + p.getId()).session(session).with(csrf())).andExpect(status().isNoContent());
+        assertFalse(posts.existsById(p.getId()));
+        mvc.perform(post("/api/admin/posts/" + p.getId() + "/restore").session(session).with(csrf())).andExpect(status().isNotFound());
+        Post privatePost = makePost(privateThread, other);
+        mvc.perform(delete("/api/admin/threads/" + privateThread.getId()).session(session).with(csrf())).andExpect(status().isNoContent());
+        assertFalse(posts.existsById(privatePost.getId())); assertFalse(threads.existsById(privateThread.getId()));
+        Post remaining = makePost(publicThread, other);
+        mvc.perform(delete("/api/admin/forums/" + forum.getId()).session(session).with(csrf())).andExpect(status().isNoContent());
+        assertFalse(forums.existsById(forum.getId())); assertFalse(threads.existsById(publicThread.getId())); assertFalse(posts.existsById(remaining.getId()));
+        mvc.perform(post("/api/admin/forums/" + forum.getId() + "/restore").session(session).with(csrf())).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/admin/users/" + owner.getId()).session(session).with(csrf())).andExpect(status().isNoContent());
+        assertFalse(users.existsById(owner.getId()));
+        mvc.perform(post("/api/admin/users/" + owner.getId() + "/restore").session(session).with(csrf())).andExpect(status().isNotFound());
+    }
+    @Test void adminRoleIsRecheckedForAnExistingSession() throws Exception {
+        MockHttpSession session = login(admin);
+        admin.setRole(User.Role.USER); users.flush();
+        mvc.perform(post("/api/admin/forums/" + forum.getId() + "/block").session(session).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/admin/users/" + owner.getId()).session(session).with(csrf())).andExpect(status().isForbidden());
+    }
     @Test void blockedExistingSessionAndAdminAuthorization() throws Exception {
         MockHttpSession memberSession = login(other), adminSession = login(admin);
         mvc.perform(post("/api/admin/users/" + owner.getId() + "/block").session(memberSession).with(csrf())).andExpect(status().isForbidden());

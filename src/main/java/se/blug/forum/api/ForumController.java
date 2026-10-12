@@ -145,6 +145,21 @@ public class ForumController {
     @DeleteMapping("/admin/forums/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteForum(@PathVariable Long id, Authentication auth) { admin(auth); service.deleteForum(id); }
+    @DeleteMapping("/admin/users/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable Long id, Authentication auth) { admin(auth); service.deleteUser(id); }
+    @PostMapping("/admin/forums/{id}/block")
+    public ForumView blockForum(@PathVariable Long id, Authentication auth) { admin(auth); return ForumView.of(service.blockForum(id, true)); }
+    @PostMapping("/admin/forums/{id}/restore")
+    public ForumView restoreForum(@PathVariable Long id, Authentication auth) { admin(auth); return ForumView.of(service.blockForum(id, false)); }
+    @PostMapping("/admin/threads/{id}/block")
+    public ThreadView blockThread(@PathVariable Long id, Authentication auth) { admin(auth); return ThreadView.of(service.blockThread(id, true)); }
+    @PostMapping("/admin/threads/{id}/restore")
+    public ThreadView restoreThread(@PathVariable Long id, Authentication auth) { admin(auth); return ThreadView.of(service.blockThread(id, false)); }
+    @PostMapping("/admin/posts/{id}/block")
+    public PostView blockPostAdmin(@PathVariable Long id, Authentication auth) { admin(auth); return PostView.of(service.blockPostAdmin(id, true)); }
+    @PostMapping("/admin/posts/{id}/restore")
+    public PostView restorePost(@PathVariable Long id, Authentication auth) { admin(auth); return PostView.of(service.blockPostAdmin(id, false)); }
     @DeleteMapping("/admin/threads/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteThread(@PathVariable Long id, Authentication auth) { admin(auth); service.deleteThread(id); }
