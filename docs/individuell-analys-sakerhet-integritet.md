@@ -1,6 +1,6 @@
 # Individuell analys – säkerhet och integritet i Blug Forum
 
-Detta är en teknisk analys av implementationen, inte påståenden om Angelicas personliga erfarenheter eller ett intyg om juridisk efterlevnad. Projektet är en skolbackend. Blug levererar frontend separat, och dess integration är ännu inte verifierad.
+Analysen beskriver säkerhet och integritet i Blug Forums REST-backend.
 
 ## Arkitektur, uppgifter och skyddsvärden
 
@@ -26,7 +26,7 @@ API:t binder uttryckliga requestfält och returnerar avgränsade DTO:er. Kliente
 
 CSRF är aktivt även för registrering, login och logout. Frontend måste hämta en ny token efter login/logout och bevara cookies; detta ökar integrationsarbetet men skyddar webbläsarsessioner. Inga JWT-, OAuth- eller MFA-system har lagts till. Validering begränsar storleken på fält och felsvar exponerar inte interna undantag. SQL- och säkerhetsdebugloggning är avstängd i standardinställningen.
 
-Privata trådars metadata listas utan innehåll eller medlemsrelationer enligt den provisoriska tolkningen. Det gör forumet lätt att navigera men innebär att titlar inte får användas för hemlig information. Blockering behåller text för återställning; författarradering tar bort inläggstext medan permanent deletion tar bort databasrader. Kontoradering tar även bort ägda trådar och därmed andras inlägg i dem. Det ger enkel och förutsägbar referensintegritet, men ägarbyte bör göras först om gruppen vill bevara diskussionen.
+Privata trådars metadata listas utan innehåll eller medlemsrelationer. Det gör forumet lätt att navigera men innebär att titlar inte får användas för hemlig information. Blockering behåller text för återställning; författarradering tar bort inläggstext medan permanent deletion tar bort databasrader. Kontoradering tar även bort ägda trådar och därmed andras inlägg i dem. Det ger enkel och förutsägbar referensintegritet, men ägarbyte bör göras först om gruppen vill bevara diskussionen.
 
 Profilens användarnamn är oföränderligt för en enkel identitetsmodell. Lösenordsbyte avslutar aktuell session; andra egna sessioner kan fortfarande vara aktiva. Det senare är en kvarstående risk, inte en genomförd funktion för global sessionsåterkallelse. Testerna använder syntetiska uppgifter i en separat databas för att undvika skador på gruppens data.
 
@@ -44,4 +44,4 @@ Retention behöver fastställas före verklig användning. För skolprojektet re
 
 Verifierat 2026-10-12: 18 automatiska tester och 124 riktiga HTTP-kontroller passerade. En dump med syntetiska data återlästes till `blug_forum_restore_test`; tabellernas samtliga radfingeravtryck och en representativ innehålls-/ägarskapsrelation matchade källan. Detta visar en fungerande lokal återläsning, inte att en daglig backuprutin, krypterad backupförvaring eller juridisk efterlevnad har etablerats. Livekontrollen hittade och verifierade också fixen som bevarar 403 vid anonym CSRF-nekning genom servlet ERROR-dispatch.
 
-Nästa sprint bör verifiera lärarens exakta kontrakt och Blugs frontend, begränsa loginförsök, lägga till paginering för större datamängder samt granska XSS-säker rendering i frontend. Före extern drift behövs TLS, lämpliga cookie-/databasinställningar, integritetsinformation och fastställt personuppgiftsansvar. Lokala databaslösenord och `ddl-auto: update` är utvecklingsinställningar. Efterlevnad av GDPR är inte fastställd genom dessa kodändringar.
+Nästa sprint bör begränsa loginförsök, lägga till paginering för större datamängder samt granska XSS-säker rendering i frontend. Före extern drift behövs TLS, lämpliga cookie-/databasinställningar, integritetsinformation och fastställt personuppgiftsansvar. Lokala databaslösenord och `ddl-auto: update` är utvecklingsinställningar. Efterlevnad av GDPR är inte fastställd genom dessa kodändringar.
