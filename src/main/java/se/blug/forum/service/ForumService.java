@@ -146,7 +146,18 @@ public class ForumService {
         threadRepository.flush(); forumRepository.flush(); postRepository.flush();
         userRepository.delete(user); userRepository.flush();
     }
-    public void deleteForum(Long id) { forumRepository.delete(forum(id)); }
+    public Forum blockForum(Long id, boolean blocked) { Forum forum = forum(id); forum.setBlocked(blocked); return forum; }
+    public ForumThread blockThread(Long id, boolean blocked) { ForumThread thread = thread(id); thread.setBlocked(blocked); return thread; }
+    public Post blockPostAdmin(Long id, boolean blocked) {
+        Post post = post(id);
+        if (post.isDeleted()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Deleted content cannot be restored or blocked");
+        post.setBlocked(blocked); return post;
+    }
+    public void deleteForum(Long id) {
+        Forum forum = forum(id);
+        for (ForumThread thread : threadRepository.findByForumId(id)) deleteThread(thread.getId());
+        forumRepository.delete(forum); forumRepository.flush();
+    }
     public void deleteThread(Long id) {
         ForumThread thread = thread(id);
         postRepository.deleteAll(postRepository.findByForumThreadId(id));
@@ -155,5 +166,9 @@ public class ForumService {
         thread.getForum().getForumThreads().removeIf(t -> t.getId().equals(id));
         threadRepository.delete(thread); threadRepository.flush();
     }
-    public void deletePostAdmin(Long id) { postRepository.delete(post(id)); }
+    public void deletePostAdmin(Long id) {
+        Post post = post(id);
+        post.getForumThread().getPosts().removeIf(p -> p.getId().equals(id));
+        postRepository.delete(post); postRepository.flush();
+    }
 }
