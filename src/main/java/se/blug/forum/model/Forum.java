@@ -25,7 +25,7 @@ public class Forum {
     @Column
     private String content;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean blocked = false;
 
     @ManyToOne(fetch = FetchType.LAZY)

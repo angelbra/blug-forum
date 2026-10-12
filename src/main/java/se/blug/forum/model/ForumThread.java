@@ -35,7 +35,7 @@ public class ForumThread {
     @Column(nullable = false)
     private boolean isPublic = true;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean blocked = false;
 
     @ManyToMany(fetch = FetchType.LAZY)

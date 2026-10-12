@@ -34,7 +34,7 @@ public class Post {
     @Column(nullable = false)
     private boolean deleted = false;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean blocked = false;
 
     @PrePersist
