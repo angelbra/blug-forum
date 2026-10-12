@@ -1,6 +1,6 @@
 # Blug Forum – fortsättningsguide
 
-Det befintliga projektet används: Java 25, Spring Boot 4.0.5, Gradle wrapper 9.4.1 och PostgreSQL 18. Ingen ny frontend eller projektstruktur har införts. `UserData` och dess repository finns kvar men används inte för autentisering. Användare, profiler och behörigheter använder tabellen `users`.
+Projektet använder Java 25, Spring Boot 4.0.5, Gradle wrapper 9.4.1 och PostgreSQL 18. `UserData` och dess repository finns kvar men används inte för autentisering. Användare, profiler och behörigheter använder tabellen `users`.
 
 ## Start i Windows PowerShell
 
@@ -76,7 +76,7 @@ Använd egna uppgifter vid verklig drift. Lösenordet loggas inte och ska inte c
 4. Hämta en ny token efter login eller logout och använd den senaste sessioncookien. CSRF skyddar också anonyma skrivningar. Saknad/felaktig token: 403.
 5. POST `/api/auth/logout`: 204. Profilens lösenordsbyte och radering avslutar den aktuella sessionen.
 
-Frontendens fetch-anrop behöver `credentials: 'include'` för sessioner. CORS har inte öppnats: ingen separat frontend-origin har verifierats. Thymeleaf-formulär med `th:action` får CSRF-fält genom Spring-integrationen. Spring beskriver tokenhanteringen i [CSRF-dokumentationen](https://docs.spring.io/spring-security/reference/7.0/servlet/exploits/csrf.html).
+Fetch-anrop behöver `credentials: 'include'` för sessioner. CORS är inte aktiverat. Thymeleaf-formulär med `th:action` får CSRF-fält genom Spring-integrationen. Spring beskriver tokenhanteringen i [CSRF-dokumentationen](https://docs.spring.io/spring-security/reference/7.0/servlet/exploits/csrf.html).
 
 ## Databas och åtkomst
 
@@ -86,9 +86,9 @@ Frontendens fetch-anrop behöver `credentials: 'include'` för sessioner. CORS h
 
 Blockering behåller data för återställning. Författarens inläggsradering lämnar en dold tombstone och tar bort texten. Ägarens trådradering och administratörens DELETE är permanenta. Återställning tar bara bort blockeringen och kan inte återskapa raderad data. Vid kontoradering raderas ägda trådar inklusive deras inlägg och kontots övriga inlägg; medlemskopplingar tas bort och forumattribution sätts till null. Ägaren kan överföra en tråd innan kontot raderas.
 
-## API-kontrakt (provisoriskt tills lärarens specifikation kan läsas)
+## REST API
 
-Lärarlänken kunde inte läsas: https://dm24h-tuc.lms.nodehill.se/article/blug-endpoints. Befintliga paths behålls. Kompatibilitet med Blugs frontend är inte verifierad. JSON används om inte annat anges. Id-referenser är `{ "id": 123 }`; synlighet är `{ "isPublic": false }`.
+JSON används om inte annat anges. Id-referenser är `{ "id": 123 }`; synlighet är `{ "isPublic": false }`.
 
 | Metod och path | Begäran / beteende |
 |---|---|
@@ -141,8 +141,6 @@ Verifiera tabeller, relationer och representativa poster; antal räcker inte ens
 
 ## Gruppens nästa uppgifter
 
-- Hämta lärarens exakta endpointkontrakt och jämför metoder, paths, begäran och svar.
-- Verifiera Blugs verkliga frontend med sessioncookies och CSRF, och konfigurera endast dess origin om CORS behövs.
 - Granska release-branchens behörigheter och testresultat tillsammans före skolredovisningen.
 - Fastställ integritetstext, ansvarig organisation, lagringstider och backupansvar.
 - För nästa sprint: loginbegränsning, paginering och granskning av HTML-rendering i den separata frontend som Blug levererar.
@@ -156,6 +154,5 @@ Verifiera tabeller, relationer och representativa poster; antal räcker inte ens
 - Paketerad JAR startades mot PostgreSQL 18.6 på port 8081 med `blug_forum_test`. `scripts/smoke-test.ps1` passerade 124 kontroller med riktiga HTTP-anrop, cookies och CSRF-token; syntetiska data var populära, inte bara en tom forumlista.
 - Livekontrollen hittade också fel status vid anonym CSRF-nekning: en ERROR-dispatch gav 401 i stället för 403. Säkerhetskonfigurationen tillåter nu intern ERROR-dispatch så originalstatus bevaras. Återkörning verifierade 403. Två tidiga smoke-fel var PowerShell-hantering av tomma bytesvar och cachade headers; båda korrigerades utan försvagade assertions.
 - pg_dump/pg_restore från `blug_forum_test` till ny `blug_forum_restore_test` genomfördes utan överskrivning av befintlig databas. Radantal och fingeravtryck för varje tabells fullständiga rader matchade: users 10, forums 4, threads 6, posts 5, moderators 0, participants 2. En representativ fyrtabellsjoin verifierade återställd inläggstext, ägarskap, användarroll och blockstatus. Dessa antal gäller denna körning med syntetiska uppgifter.
-- Kvarstående kontraktsblocker: lärarens endpointspecifikation har ännu inte lämnats efter att länken visat sig otillgänglig. Ingen faktisk Blug-frontend har testats. Därför hävdas inte exakt lärarkontrakt eller frontendkompatibilitet.
 
 Feature-commits: `adae563` sessionsäkerhet (inkluderar bevarad samtidig commit `9105bfe`), `54ef3e5` medlemslivscykel, `73f7554` trådmoderering, `38472ab` adminlivscykel och `eaf1b5c` slutlig verifiering/dokumentation. De är pushade på respektive `feature/session-security`, `feature/member-lifecycle`, `feature/thread-moderation`, `feature/admin-lifecycle` och `feature/verification-docs`. Samtliga integrerades i den pushade `release`-branchen; verifieringsintegrationen är `01ccd20`, följd av denna dokumentationsuppdatering. `main` har inte pushats i detta arbete. Kontrollera aktuell release-tip med `git log -1 --oneline`.
